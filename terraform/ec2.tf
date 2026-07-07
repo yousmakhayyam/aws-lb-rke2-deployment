@@ -25,10 +25,8 @@ resource "aws_instance" "master" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
   subnet_id              = data.aws_subnet.chosen.id
-  vpc_security_group_ids = [aws_security_group.rke2.id]
-  key_name               = aws_key_pair.rke2.key_name
-  iam_instance_profile   = aws_iam_instance_profile.node_profile.name
-
+  vpc_security_group_ids = [data.aws_security_group.rke2.id]
+  iam_instance_profile   = data.aws_iam_instance_profile.node_profile.name
   root_block_device {
     volume_size = 30
     volume_type = "gp3"
@@ -54,9 +52,9 @@ resource "aws_instance" "worker" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
   subnet_id              = data.aws_subnet.chosen.id
-  vpc_security_group_ids = [aws_security_group.rke2.id]
-  key_name               = aws_key_pair.rke2.key_name
-  iam_instance_profile   = aws_iam_instance_profile.node_profile.name
+  vpc_security_group_ids = [data.aws_security_group.rke2.id]
+  key_name               = data.aws_key_pair.rke2.key_name
+  iam_instance_profile   = data.aws_iam_instance_profile.node_profile.name
 
   root_block_device {
     volume_size = 30

@@ -1,3 +1,4 @@
+# EC2 Assume Role Policy Document
 data "aws_iam_policy_document" "ec2_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -8,12 +9,12 @@ data "aws_iam_policy_document" "ec2_assume" {
   }
 }
 
-resource "aws_iam_role" "node_role" {
-  name               = "${var.cluster_name}-node-role"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
+# ✅ Data source (existing role)
+data "aws_iam_role" "node_role" {
+  name = "${var.cluster_name}-node-role"
 }
 
-resource "aws_iam_instance_profile" "node_profile" {
+# ✅ Data source (existing instance profile)
+data "aws_iam_instance_profile" "node_profile" {
   name = "${var.cluster_name}-node-profile"
-  role = aws_iam_role.node_role.name
 }

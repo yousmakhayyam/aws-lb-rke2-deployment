@@ -20,5 +20,5 @@ output "get_kubeconfig_command" {
 
 output "node_iam_role_name" {
   description = "IAM role name attached to both nodes (needed nowhere else now, it's automatic)"
-  value       = aws_iam_role.node_role.name
+  value       = data.aws_iam_role.node_role.name
 }
