@@ -2,7 +2,7 @@ name: Deploy AWS Load Balancer on RKE2 Cluster
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "terraform/**"
       - "k8s/**"
