@@ -1,0 +1,20 @@
+# Helm values for aws-load-balancer-controller on a self-managed RKE2 cluster
+# (no OIDC/IRSA available, so the controller relies on the node's IAM
+# instance-profile role that Terraform attached the policy to)
+
+clusterName: yousma-rke2-cluster
+region: us-east-1
+vpcId: vpc-XXXXXXXX          # replace with your actual VPC id
+
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+
+# RKE2 does not run the in-tree AWS cloud provider, so tell the
+# controller explicitly which subnets/VPC to use instead of
+# auto-detecting from EC2 metadata tags on the control plane.
+enableShield: false
+enableWaf: false
+enableWafv2: false
+
+replicaCount: 1
