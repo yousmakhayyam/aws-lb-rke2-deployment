@@ -1,0 +1,13 @@
+clusterName: yousma-rke2-cluster
+region: us-east-1
+vpcId: vpc-0019b9587d212fc86
+
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+
+enableShield: false
+enableWaf: false
+enableWafv2: false
+
+replicaCount: 1
