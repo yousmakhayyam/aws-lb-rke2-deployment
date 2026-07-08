@@ -71,7 +71,7 @@ jobs:
           kubectl wait --for=condition=Ready nodes --all --timeout=300s
           kubectl get nodes -o wide
 
-  # ---------------------------------------------------------------------
+  # --------------------------------------------------------------------
   # STAGE 2: Run the Load Balancer scripts ON the cluster
   # ---------------------------------------------------------------------
   deploy-load-balancer:
