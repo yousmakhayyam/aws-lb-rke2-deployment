@@ -3,8 +3,13 @@
 *.tfstate.*
 .terraform.lock.hcl
 terraform.tfvars
+
+# SSH keys - except the one we need for pipeline
 *.pem
+!yousma-rke2-cluster-key.pem
 *.key
+!yousma-rke2-cluster-key.pem
+
 kubeconfig
 *.exe
 *.dll
