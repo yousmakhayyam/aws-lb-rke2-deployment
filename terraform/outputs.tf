@@ -14,7 +14,7 @@ output "ssh_to_master" {
 }
 
 output "get_kubeconfig_command" {
-  description = "Run this from your laptop to pull kubeconfig, then fix the server IP"
+  description = "Run this from your laptop to pull kubeconfig"
   value       = "scp -i ${var.cluster_name}-key.pem ubuntu@${aws_eip.master.public_ip}:/etc/rancher/rke2/rke2.yaml ./kubeconfig && (Get-Content ./kubeconfig) -replace '127.0.0.1', '${aws_eip.master.public_ip}' | Set-Content ./kubeconfig"
 }
 
@@ -23,9 +23,8 @@ output "node_iam_role_name" {
   value       = data.aws_iam_role.node_role.name
 }
 
-# ✅ PERMANENT FIX: SSH key direct file se read karo
-# NOTE: Yeh file local machine par exist karti hai (Terraform apply se create hoti hai)
+# ✅ SSH Private Key - Terraform state se (pipeline ke liye)
 output "ssh_private_key" {
-  value     = file("${path.module}/${var.cluster_name}-key.pem")
+  value     = tls_private_key.rke2.private_key_pem
   sensitive = true
 }

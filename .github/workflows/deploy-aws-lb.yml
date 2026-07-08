@@ -59,7 +59,7 @@ jobs:
           sleep 180
           mkdir -p ~/.ssh
           
-          # ✅ FIX: Terraform output se SSH key fetch karo
+          # ✅ Terraform output se SSH key fetch
           terraform output -raw ssh_private_key > ~/.ssh/rke2-key.pem
           chmod 600 ~/.ssh/rke2-key.pem
           
@@ -88,7 +88,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           
-          # ✅ FIX: Terraform output se SSH key fetch karo
+          # ✅ Terraform output se SSH key fetch
           terraform output -raw ssh_private_key > ~/.ssh/rke2-key.pem
           chmod 600 ~/.ssh/rke2-key.pem
           
