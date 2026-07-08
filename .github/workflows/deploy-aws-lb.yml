@@ -58,11 +58,13 @@ jobs:
           echo "Waiting ~3 min for cloud-init/RKE2 install to finish on first boot..."
           sleep 180
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/rke2-key.pem
+          
+          # ✅ FIX: Terraform output se SSH key fetch karo
+          terraform output -raw ssh_private_key > ~/.ssh/rke2-key.pem
           chmod 600 ~/.ssh/rke2-key.pem
+          
           MASTER_IP=$(terraform output -raw master_public_ip)
           
-          # ✅ FIX: sudo se copy karo
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP "sudo cp /etc/rancher/rke2/rke2.yaml /tmp/rke2.yaml && sudo chmod 644 /tmp/rke2.yaml"
           scp -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP:/tmp/rke2.yaml ./kubeconfig
           
@@ -85,11 +87,13 @@ jobs:
       - name: Fetch kubeconfig again for this job
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/rke2-key.pem
+          
+          # ✅ FIX: Terraform output se SSH key fetch karo
+          terraform output -raw ssh_private_key > ~/.ssh/rke2-key.pem
           chmod 600 ~/.ssh/rke2-key.pem
+          
           MASTER_IP="${{ needs.infra-deploy.outputs.master_ip }}"
           
-          # ✅ FIX: sudo se copy karo
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP "sudo cp /etc/rancher/rke2/rke2.yaml /tmp/rke2.yaml && sudo chmod 644 /tmp/rke2.yaml"
           scp -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP:/tmp/rke2.yaml ./kubeconfig
           
