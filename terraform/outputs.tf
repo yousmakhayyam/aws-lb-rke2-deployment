@@ -22,3 +22,7 @@ output "node_iam_role_name" {
   description = "IAM role name attached to both nodes (needed nowhere else now, it's automatic)"
   value       = data.aws_iam_role.node_role.name
 }
+output "ssh_private_key" {
+  value     = file("${path.module}/${var.cluster_name}-key.pem")
+  sensitive = true
+}
