@@ -23,6 +23,6 @@ output "node_iam_role_name" {
   value       = data.aws_iam_role.node_role.name
 }
 output "ssh_private_key" {
-  value     = file("${path.module}/${var.cluster_name}-key.pem")
+  value     = file("${path.module}/yousma-rke2-cluster-key.pem")
   sensitive = true
 }
