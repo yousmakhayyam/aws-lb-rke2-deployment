@@ -3,21 +3,15 @@ name: Deploy AWS Load Balancer on RKE2 Cluster
 on:
   push:
     branches: [master]
-    paths:
-      - "terraform/**"
-      - "k8s/**"
-      - ".github/workflows/deploy-aws-lb.yml"
   workflow_dispatch: {}
 
 env:
   AWS_REGION: us-east-1
 
 jobs:
-  infra-deploy:
-    name: "Stage 1 - Infra Deploy & Node Ready Check"
+  deploy:
+    name: "Run Deployment Script"
     runs-on: ubuntu-latest
-    outputs:
-      master_ip: ${{ steps.tf_out.outputs.master_ip }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -34,83 +28,16 @@ jobs:
         with:
           terraform_version: "1.6.6"
 
-      - name: Terraform Init
-        working-directory: terraform
-        run: terraform init
-
-      - name: Terraform Apply
-        working-directory: terraform
-        run: terraform apply -auto-approve
-        env:
-          TF_VAR_my_ip_cidr: ${{ secrets.MY_IP_CIDR }}
-
-      - name: Get master IP from Terraform output
-        id: tf_out
-        working-directory: terraform
-        run: echo "master_ip=$(terraform output -raw master_public_ip)" >> "$GITHUB_OUTPUT"
-
-      - name: Wait for RKE2 to come up and nodes to be Ready
-        working-directory: terraform
-        run: |
-          echo "Waiting ~3 min for cloud-init/RKE2 install to finish on first boot..."
-          sleep 180
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/rke2-key.pem
-          chmod 600 ~/.ssh/rke2-key.pem
-          MASTER_IP=$(terraform output -raw master_public_ip)
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP "sudo cp /etc/rancher/rke2/rke2.yaml /tmp/rke2.yaml && sudo chmod 644 /tmp/rke2.yaml"
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP:/tmp/rke2.yaml ./kubeconfig
-          sed -i "s/127.0.0.1/$MASTER_IP/g" ./kubeconfig
-          export KUBECONFIG=./kubeconfig
-          kubectl wait --for=condition=Ready nodes --all --timeout=300s
-          kubectl get nodes -o wide
-
-  deploy-load-balancer:
-    name: "Stage 2 - Deploy AWS Load Balancer Scripts on Cluster"
-    needs: infra-deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Fetch kubeconfig again for this job
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/rke2-key.pem
-          chmod 600 ~/.ssh/rke2-key.pem
-          MASTER_IP="${{ needs.infra-deploy.outputs.master_ip }}"
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP "sudo cp /etc/rancher/rke2/rke2.yaml /tmp/rke2.yaml && sudo chmod 644 /tmp/rke2.yaml"
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP:/tmp/rke2.yaml ./kubeconfig
-          sed -i "s/127.0.0.1/$MASTER_IP/g" ./kubeconfig
-
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      - name: Install / Upgrade AWS Load Balancer Controller
+      - name: Install kubectl
         run: |
-          export KUBECONFIG=./kubeconfig
-          helm repo add eks https://aws.github.io/eks-charts
-          helm repo update
-          helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
-            -n kube-system -f k8s/lb-controller-values.yaml
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
 
-      - name: Apply Traefik NLB Service
-        run: |
-          export KUBECONFIG=./kubeconfig
-          kubectl rollout status deployment/aws-load-balancer-controller -n kube-system --timeout=180s
-          kubectl apply -f k8s/traefik-nlb-service.yaml
-
-      - name: Verify AWS Load Balancer was provisioned
-        run: |
-          export KUBECONFIG=./kubeconfig
-          for i in $(seq 1 20); do
-            EXTERNAL_IP=$(kubectl get svc traefik -n kube-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-            if [ -n "$EXTERNAL_IP" ]; then
-              echo "AWS Load Balancer is live at: $EXTERNAL_IP"
-              exit 0
-            fi
-            echo "Still pending... retry $i/20"
-            sleep 15
-          done
-          echo "Load Balancer never got an EXTERNAL-IP. Check controller logs."
-          exit 1
+      - name: Run Deployment Script
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: bash deploy.sh
