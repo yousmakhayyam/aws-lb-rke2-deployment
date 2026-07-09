@@ -24,10 +24,11 @@ terraform {
     }
   }
 
-  # NOTE: local state for now (terraform.tfstate file right here in this
-  # folder). Yousma - is baar is poore "terraform" folder ko turant
-  # GitHub par push kar dena (private repo mein), taake dobara laptop
-  # crash ho to state aur code dono safe rahein.
+  backend "s3" {
+    bucket = "yousma-rke2-tfstate-589736534170"
+    key    = "rke2-cluster/terraform.tfstate"
+    region = "us-east-1"
+  }
 }
 
 provider "aws" {
