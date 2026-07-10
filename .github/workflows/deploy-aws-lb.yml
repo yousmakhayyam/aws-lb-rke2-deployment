@@ -40,4 +40,4 @@ jobs:
       - name: Run Deployment Script
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: bash deploy.sh
+          run: bash scripts/deploy.sh 
