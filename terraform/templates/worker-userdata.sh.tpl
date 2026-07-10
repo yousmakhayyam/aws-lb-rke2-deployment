@@ -2,6 +2,7 @@
 set -euxo pipefail
 
 mkdir -p /etc/rancher/rke2
+
 cat > /etc/rancher/rke2/config.yaml <<EOF
 server: "https://${master_ip}:9345"
 token: "${rke2_token}"
@@ -12,6 +13,7 @@ EOF
 curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
 
 mkdir -p /etc/systemd/system/rke2-agent.service.d
+
 cat > /etc/systemd/system/rke2-agent.service.d/override.conf <<EOF
 [Service]
 Environment="AWS_EC2_VALIDATE_PROVIDER_ID=false"

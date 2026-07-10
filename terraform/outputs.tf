@@ -23,11 +23,4 @@ output "node_iam_role_name" {
   value       = data.aws_iam_role.node_role.name
 }
 
-output "ssh_private_key" {
-  value     = tls_private_key.rke2.private_key_pem
-  sensitive = true
-}
-output "raw_private_key" {
-  value     = tls_private_key.rke2.private_key_pem
-  sensitive = true
-}
+

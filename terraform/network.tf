@@ -1,15 +1,20 @@
-data "aws_vpc" "default" {
-  default = true
+# Existing VPC
+
+data "aws_vpc" "cluster" {
+  id = "vpc-022e2897645b0d70c"
 }
 
-data "aws_subnets" "default" {
+# Existing subnets
+
+data "aws_subnets" "cluster" {
   filter {
     name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
+    values = [data.aws_vpc.cluster.id]
   }
 }
 
-# We just need one subnet to launch both nodes into for a simple demo cluster
+# Use one subnet for EC2
+
 data "aws_subnet" "chosen" {
-  id = tolist(data.aws_subnets.default.ids)[0]
+  id = "subnet-0b41b1fd1f13b8824"
 }

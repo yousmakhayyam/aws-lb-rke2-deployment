@@ -26,6 +26,7 @@ resource "aws_instance" "master" {
   instance_type          = var.instance_type
   subnet_id              = data.aws_subnet.chosen.id
   vpc_security_group_ids = [data.aws_security_group.rke2.id]
+  key_name = data.aws_key_pair.rke2.key_name
   iam_instance_profile   = data.aws_iam_instance_profile.node_profile.name
   root_block_device {
     volume_size = 30
