@@ -95,7 +95,7 @@ cd terraform
 
 terraform init
 
-terraform apply -auto-approve -var="my_ip_cidr=$TF_VAR_my_ip_cidr"
+terraform apply -auto-approve
 
 MASTER_IP=$(terraform output -raw master_public_ip)
 
@@ -128,11 +128,10 @@ echo "Master node is reachable."
 
 log "Downloading kubeconfig..."
 
-scp \
-    -o StrictHostKeyChecking=no \
-    -i ~/.ssh/rke2-key.pem \
-    ubuntu@"$MASTER_IP":/etc/rancher/rke2/rke2.yaml \
-    ./kubeconfig
+# Use sudo to copy kubeconfig to tmp
+ssh -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@"$MASTER_IP" "sudo cp /etc/rancher/rke2/rke2.yaml /tmp/rke2.yaml && sudo chmod 644 /tmp/rke2.yaml"
+
+scp -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@"$MASTER_IP":/tmp/rke2.yaml ./kubeconfig
 
 sed -i "s/127.0.0.1/$MASTER_IP/g" kubeconfig
 
