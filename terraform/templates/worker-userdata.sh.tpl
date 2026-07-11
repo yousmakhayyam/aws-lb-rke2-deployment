@@ -4,7 +4,7 @@ set -euxo pipefail
 mkdir -p /etc/rancher/rke2
 
 cat > /etc/rancher/rke2/config.yaml <<EOF
-server: "https://${master_ip}:9345"
+server: "https://${master_private_ip}:9345"
 token: "${rke2_token}"
 kubelet-arg:
   - "cloud-provider=external"
