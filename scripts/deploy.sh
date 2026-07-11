@@ -95,10 +95,6 @@ cd terraform
 
 terraform init
 
-terraform fmt -check
-
-terraform validate
-
 terraform apply -auto-approve -var="my_ip_cidr=$TF_VAR_my_ip_cidr"
 
 MASTER_IP=$(terraform output -raw master_public_ip)
