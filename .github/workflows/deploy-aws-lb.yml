@@ -92,5 +92,7 @@ jobs:
           export KUBECONFIG=./kubeconfig
 
       - name: Run LB Script
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
         working-directory: scripts
         run: bash lb-deploy.sh
