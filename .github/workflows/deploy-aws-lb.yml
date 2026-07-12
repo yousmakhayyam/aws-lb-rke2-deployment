@@ -10,9 +10,14 @@ env:
   TF_VAR_my_ip_cidr: ${{ secrets.MY_IP_CIDR }}
 
 jobs:
-  deploy:
-    name: "Run Deployment Script"
+  # ---------------------------------------------------------------------
+  # STAGE 1: Infra Deploy + Node Readiness
+  # ---------------------------------------------------------------------
+  infra-deploy:
+    name: "Stage 1 - Infra Deploy & Node Ready Check"
     runs-on: ubuntu-latest
+    outputs:
+      master_ip: ${{ steps.get_master_ip.outputs.master_ip }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -29,16 +34,63 @@ jobs:
         with:
           terraform_version: "1.6.6"
 
+      - name: Terraform Init & Apply
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Get master IP
+        id: get_master_ip
+        working-directory: terraform
+        run: echo "master_ip=$(terraform output -raw master_public_ip)" >> $GITHUB_OUTPUT
+
+      - name: Fetch kubeconfig and wait for nodes
+        working-directory: terraform
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/rke2-key.pem
+          chmod 600 ~/.ssh/rke2-key.pem
+          MASTER_IP=$(terraform output -raw master_public_ip)
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP "sudo cp /etc/rancher/rke2/rke2.yaml /tmp/rke2.yaml && sudo chmod 644 /tmp/rke2.yaml"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP:/tmp/rke2.yaml ./kubeconfig
+          sed -i "s/127.0.0.1/$MASTER_IP/g" ./kubeconfig
+          export KUBECONFIG=./kubeconfig
+          kubectl wait --for=condition=Ready nodes --all --timeout=600s
+          kubectl get nodes -o wide
+
+  # ---------------------------------------------------------------------
+  # STAGE 2: Run LB Script on Cluster
+  # ---------------------------------------------------------------------
+  lb-deploy:
+    name: "Stage 2 - Run LB Script on Cluster"
+    needs: infra-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      - name: Install kubectl
+      - name: Fetch kubeconfig
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/rke2-key.pem
+          chmod 600 ~/.ssh/rke2-key.pem
+          MASTER_IP="${{ needs.infra-deploy.outputs.master_ip }}"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP "sudo cp /etc/rancher/rke2/rke2.yaml /tmp/rke2.yaml && sudo chmod 644 /tmp/rke2.yaml"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP:/tmp/rke2.yaml ./kubeconfig
+          sed -i "s/127.0.0.1/$MASTER_IP/g" ./kubeconfig
+          export KUBECONFIG=./kubeconfig
 
-      - name: Run Deployment Script
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: bash scripts/deploy.sh 
+      - name: Run LB Script
+        working-directory: scripts
+        run: bash lb-deploy.sh
