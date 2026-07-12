@@ -5,7 +5,7 @@ echo "=================================================="
 echo " Stage 2 - Deploy AWS Load Balancer "
 echo "=================================================="
 
-export KUBECONFIG=./kubeconfig
+export KUBECONFIG=../kubeconfig
 
 echo "📦 Installing AWS Load Balancer Controller..."
 helm repo add eks https://aws.github.io/eks-charts || true
