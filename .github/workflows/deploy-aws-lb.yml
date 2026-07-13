@@ -115,14 +115,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.6"
+
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
       - name: Fetch kubeconfig
         run: |
-          MASTER_IP="${{ needs.infra-deploy.outputs.master_ip }}"
+          # ✅ Fetch MASTER_IP directly from Terraform state
+          cd terraform
+          MASTER_IP=$(terraform output -raw master_public_ip)
+          cd ..
+          
           if [ -z "$MASTER_IP" ]; then
-            echo "❌ MASTER_IP is empty! Check Stage 1 output."
+            echo "❌ MASTER_IP is empty! Check Terraform state."
             exit 1
           fi
           echo "✅ MASTER_IP: $MASTER_IP"
