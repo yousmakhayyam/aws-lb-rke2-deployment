@@ -96,3 +96,39 @@ jobs:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
         working-directory: scripts
         run: bash lb-deploy.sh
+
+  # ---------------------------------------------------------------------
+  # STAGE 3: Install EBS CSI Driver
+  # ---------------------------------------------------------------------
+  ebs-csi-install:
+    name: "Stage 3 - Install EBS CSI Driver"
+    needs: lb-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Fetch kubeconfig
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/rke2-key.pem
+          chmod 600 ~/.ssh/rke2-key.pem
+          MASTER_IP="${{ needs.infra-deploy.outputs.master_ip }}"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP "sudo cp /etc/rancher/rke2/rke2.yaml /tmp/rke2.yaml && sudo chmod 644 /tmp/rke2.yaml"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/rke2-key.pem ubuntu@$MASTER_IP:/tmp/rke2.yaml ./kubeconfig
+          sed -i "s/127.0.0.1/$MASTER_IP/g" ./kubeconfig
+          export KUBECONFIG=./kubeconfig
+
+      - name: Run EBS CSI Script
+        working-directory: scripts
+        run: bash ebs-csi.sh
