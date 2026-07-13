@@ -17,7 +17,7 @@ aws iam attach-role-policy \
     --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
 
 # ------------------------------------------------------------
-# 2. Helm Values File (Corrected Schema)
+# 2. Helm Values File (Corrected Schema — No node.region)
 # ------------------------------------------------------------
 echo "📦 Creating EBS CSI Driver values file..."
 mkdir -p ../k8s
@@ -25,9 +25,6 @@ cat > ../k8s/ebs-csi-values.yaml << 'EOF'
 # AWS EBS CSI Driver Helm Values
 controller:
   replicaCount: 1
-  region: us-east-1
-
-node:
   region: us-east-1
 
 storageClasses:
