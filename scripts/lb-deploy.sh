@@ -7,6 +7,47 @@ echo "=================================================="
 
 export KUBECONFIG=../kubeconfig
 
+echo "📦 Creating Helm values file..."
+cat > ../k8s/lb-controller-values.yaml << 'EOF'
+clusterName: yousma-rke2-cluster
+region: us-east-1
+vpcId: vpc-0019b9587d212fc86
+
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+
+enableShield: false
+enableWaf: false
+enableWafv2: false
+
+replicaCount: 1
+EOF
+
+echo "📦 Creating Traefik NLB Service file..."
+cat > ../k8s/traefik-nlb-service.yaml << 'EOF'
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: kube-system
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
+    service.beta.kubernetes.io/aws-load-balancer-subnets: "subnet-0ba7ea094df9594fb,subnet-0e26fdab2d655e103,subnet-0366d02919c19beab"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
+  selector:
+    app.kubernetes.io/name: traefik
+EOF
+
 echo "📦 Installing AWS Load Balancer Controller..."
 helm repo add eks https://aws.github.io/eks-charts || true
 helm repo update
