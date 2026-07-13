@@ -5,9 +5,7 @@ echo "=================================================="
 echo " Stage 2 - Deploy AWS Load Balancer "
 echo "=================================================="
 
-# ✅ Create k8s folder if it doesn't exist
 mkdir -p ../k8s
-
 export KUBECONFIG=../kubeconfig
 
 echo "📦 Creating Helm values file..."
@@ -39,6 +37,8 @@ metadata:
     service.beta.kubernetes.io/aws-load-balancer-internal: "false"
     service.beta.kubernetes.io/aws-load-balancer-subnets: "subnet-0ba7ea094df9594fb,subnet-0e26fdab2d655e103,subnet-0366d02919c19beab"
     service.beta.kubernetes.io/aws-load-balancer-name: "yousma-nlb"
+    service.beta.kubernetes.io/aws-load-balancer-target-type: "ip"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
 spec:
   type: LoadBalancer
   ports:
@@ -67,6 +67,8 @@ kubectl rollout status deployment/aws-load-balancer-controller \
     --timeout=300s
 
 echo "📦 Deploying Traefik NLB Service..."
+# Delete old service first to ensure clean state
+kubectl delete svc traefik -n kube-system --ignore-not-found
 kubectl apply -f ../k8s/traefik-nlb-service.yaml
 
 echo "⏳ Waiting for EXTERNAL-IP..."
