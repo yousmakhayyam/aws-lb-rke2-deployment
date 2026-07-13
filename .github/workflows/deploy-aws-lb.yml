@@ -102,7 +102,9 @@ jobs:
   # ---------------------------------------------------------------------
   ebs-csi-install:
     name: "Stage 3 - Install EBS CSI Driver"
-    needs: lb-deploy
+    needs: 
+      - infra-deploy
+      - lb-deploy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -115,26 +117,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.6.6"
-
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      - name: Fetch kubeconfig
+      - name: Get Master IP from AWS
+        id: get_master_ip
         run: |
-          # ✅ Fetch MASTER_IP directly from Terraform state
-          cd terraform
-          MASTER_IP=$(terraform output -raw master_public_ip)
-          cd ..
-          
-          if [ -z "$MASTER_IP" ]; then
-            echo "❌ MASTER_IP is empty! Check Terraform state."
+          MASTER_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=yousma-rke2-cluster-master" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          if [ -z "$MASTER_IP" ] || [ "$MASTER_IP" == "None" ]; then
+            echo "❌ Failed to get Master IP from AWS!"
             exit 1
           fi
           echo "✅ MASTER_IP: $MASTER_IP"
+          echo "master_ip=$MASTER_IP" >> $GITHUB_OUTPUT
+
+      - name: Fetch kubeconfig
+        run: |
+          MASTER_IP="${{ steps.get_master_ip.outputs.master_ip }}"
+          echo "Using MASTER_IP: $MASTER_IP"
           
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/rke2-key.pem
