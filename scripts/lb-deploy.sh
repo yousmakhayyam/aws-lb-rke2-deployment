@@ -35,6 +35,7 @@ metadata:
     service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
     service.beta.kubernetes.io/aws-load-balancer-internal: "false"
     service.beta.kubernetes.io/aws-load-balancer-subnets: "subnet-0ba7ea094df9594fb,subnet-0e26fdab2d655e103,subnet-0366d02919c19beab"
+    service.beta.kubernetes.io/aws-load-balancer-name: "yousma-nlb"
 spec:
   type: LoadBalancer
   ports:
