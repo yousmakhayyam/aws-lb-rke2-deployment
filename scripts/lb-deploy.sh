@@ -5,6 +5,9 @@ echo "=================================================="
 echo " Stage 2 - Deploy AWS Load Balancer "
 echo "=================================================="
 
+# ✅ Create k8s folder if it doesn't exist
+mkdir -p ../k8s
+
 export KUBECONFIG=../kubeconfig
 
 echo "📦 Creating Helm values file..."
