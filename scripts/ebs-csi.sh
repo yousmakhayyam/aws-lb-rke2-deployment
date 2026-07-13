@@ -12,21 +12,19 @@ export KUBECONFIG=../kubeconfig
 # ------------------------------------------------------------
 echo "📦 Attaching IAM Policy for EBS CSI Driver..."
 
-# AWS managed policy use kar rahe hain — safest aur recommended tareeqa[reference:5]
 aws iam attach-role-policy \
     --role-name yousma-rke2-cluster-node-role \
     --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
 
 # ------------------------------------------------------------
-# 2. Helm Values File
+# 2. Helm Values File (Corrected Schema)
 # ------------------------------------------------------------
 echo "📦 Creating EBS CSI Driver values file..."
 mkdir -p ../k8s
 cat > ../k8s/ebs-csi-values.yaml << 'EOF'
 # AWS EBS CSI Driver Helm Values
-replicaCount: 2
-
 controller:
+  replicaCount: 1
   region: us-east-1
 
 node:
@@ -50,7 +48,7 @@ EOF
 # 3. Install EBS CSI Driver via Helm
 # ------------------------------------------------------------
 echo "📦 Installing EBS CSI Driver via Helm..."
-helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver || true[reference:6]
+helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver || true
 helm repo update
 
 helm upgrade --install aws-ebs-csi-driver \
